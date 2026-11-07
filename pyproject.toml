@@ -1,0 +1,10 @@
+[project]
+name = "ai-coding-adoption-playbook"
+version = "0.1.0"
+description = "A rollout kit for AI coding tools, with a small adoption scorecard."
+requires-python = ">=3.11"
+license = { text = "MIT" }
+
+[tool.pytest.ini_options]
+pythonpath = ["tools"]
+testpaths = ["tests"]
