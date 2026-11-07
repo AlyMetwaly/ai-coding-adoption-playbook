@@ -6,11 +6,11 @@ How an AI agent should work in this repo.
 
 A docs repo plus a small Python tool. It is a practical kit for rolling out an AI coding tool, written around Cursor.
 
-- `docs/` has five guides and four templates.
+- `docs/` has five guides, a simulated worked example and four templates.
 - `.cursor/rules/` has two example rules.
 - `tools/adoption_scorecard/` turns a usage CSV into a Markdown report.
 - `tools/check_style.py` checks the style rules.
-- `data/sample_usage.csv` is synthetic data.
+- `data/` holds synthetic data only: a sample file and two worked-example files.
 - `SPEC.md` is the source of truth for scope. Read it first.
 
 ## Style rules
