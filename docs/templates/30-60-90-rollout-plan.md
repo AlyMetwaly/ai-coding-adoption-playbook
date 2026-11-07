@@ -4,6 +4,17 @@ Fill in owners, dates and your exit criteria. Exit criteria are thresholds you s
 
 **Rollout owner:** [fill in] **Sponsor:** [fill in] **Start date:** [fill in]
 
+## Decision gates
+
+The 30, 60 and 90 day blocks below are a planning aid. The real controls are the gates. Do not pass a gate because the calendar says so.
+
+| Gate | Passes when | Who decides | Date |
+|---|---|---|---|
+| Pilot entry | Sponsor, owner and scope named. Security and data review done. Baseline collected. | Sponsor | [fill in] |
+| First evidence review | Scorecard run. Flags read. Support load known. | Rollout owner | [fill in] |
+| Midpoint correction | Problems from the first review fixed or logged. Stop conditions checked. | Sponsor | [fill in] |
+| Expansion decision | Pre-set triggers met, held, or failed. Outcome evidence reviewed with its limits. | Sponsor | [fill in] |
+
 ## Phase 1: days 1 to 30 (enable a pilot)
 
 | Area | Actions | Owner | Due |
