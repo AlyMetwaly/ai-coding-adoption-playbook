@@ -1,0 +1,118 @@
+# AI coding adoption playbook
+
+A practical rollout kit for AI coding tools, with Cursor as the working example.
+
+It helps you move an AI coding tool from licenses bought to regular use across an engineering organization. The examples are written around Cursor, and most of the rollout practices apply to similar tools. The kit has five short guides, five fill-in templates, two example repository rules, and a small Python tool that turns per-user usage data into an adoption report.
+
+## Independence
+
+This is an independent open source project. It is not affiliated with, sponsored by, or endorsed by Cursor or its owner. Cursor is the working example. Product features, administration, analytics, and exports can change. Where a step depends on current Cursor behavior, the guides say "verify against current Cursor docs".
+
+## Start here
+
+If you are running a rollout:
+
+1. Read [docs/01-align.md](docs/01-align.md).
+2. Fill in the executive one-pager and the 30-60-90 plan from [docs/templates](docs/templates).
+3. Use [docs/02-enable.md](docs/02-enable.md) and the champion charter for the first teams.
+4. Run the adoption scorecard once you have enough usage data to see a pattern.
+5. Read [docs/04-measure.md](docs/04-measure.md) before you interpret the numbers.
+6. Expand only when use is repeatable and the operating issues are understood.
+
+You do not need to use every part of the kit.
+
+## Who this is for
+
+- A deployment or customer success lead running an AI coding rollout.
+- An engineering leader accountable for adoption and outcomes.
+- A team champion helping engineers turn the tool into useful working habits.
+
+## The five moves
+
+| Move | Guide | The question it answers |
+| --- | --- | --- |
+| Align | [docs/01-align.md](docs/01-align.md) | Who owns the rollout, what problem are we solving, and how will we know if it worked? |
+| Enable | [docs/02-enable.md](docs/02-enable.md) | How does each role get from access to a useful first week? |
+| Embed | [docs/03-embed.md](docs/03-embed.md) | Which useful behaviors should become repeatable team practices? |
+| Measure | [docs/04-measure.md](docs/04-measure.md) | What should we measure, and where can the numbers mislead us? |
+| Expand | [docs/05-expand.md](docs/05-expand.md) | Should we expand, hold, or fix the rollout first? |
+
+Templates in [docs/templates](docs/templates): an executive one-pager, a champion charter, a 30-60-90 rollout plan, an account health review, and an outcome review.
+
+Two example Cursor rules are in [.cursor/rules](.cursor/rules). [AGENTS.md](AGENTS.md) shows how an agent should work in this repo.
+
+## Measure in layers
+
+The kit keeps five questions apart, because each one answers something different:
+
+1. Access: who holds a license?
+2. Activation: who has used it at all?
+3. Adoption: who keeps coming back?
+4. Depth: how do active users work with it?
+5. Outcomes: is anything about the engineering work improving?
+
+One rule runs through the repo. Do not read a metric as proof of the next layer. Licenses do not prove use. Use does not prove depth. Depth does not prove productivity. Productivity does not prove business value.
+
+## The scorecard
+
+`tools/adoption_scorecard` reads a CSV of per-user usage and prints a Markdown report with:
+
+1. The funnel: licensed, activated, weekly active, sustained.
+2. Results by team: sustained rate, median active days, and a trend when you give it an earlier export.
+3. Depth: agent sessions, completions only, or nothing accepted. Depth is reported on its own and is not scored.
+4. An adoption signal from 0 to 100, with the formula printed in the report, and up to three flags to investigate.
+5. What each metric can hide, and which metric to check it against.
+
+It uses only the Python standard library. Tests use pytest.
+
+### Run it
+
+Python 3.11 or later.
+
+```bash
+python tools/adoption_scorecard data/sample_usage.csv
+```
+
+Useful options:
+
+```bash
+python tools/adoption_scorecard data/sample_usage.csv --as-of 2025-06-30
+python tools/adoption_scorecard data/sample_usage.csv --previous earlier_export.csv
+python tools/adoption_scorecard data/sample_usage.csv --out report.md
+```
+
+### Input columns
+
+| Column | Meaning |
+| --- | --- |
+| `user_id` | A stable id. No names or emails. |
+| `team` | The team the user belongs to. |
+| `licensed_date` | Date the license was assigned, `YYYY-MM-DD`. |
+| `last_active_date` | Last day of use, or empty if never used. |
+| `active_days_last_28` | Days with any use in the last 28 days, 0 to 28. |
+| `agent_sessions_last_28` | Agent sessions in the last 28 days. |
+| `accepted_suggestions_last_28` | Accepted suggestions in the last 28 days. |
+| `active_weeks_last_4` | Optional. Weeks with use in the last 4, 0 to 4. |
+
+Rows that fail validation are skipped and listed in the report. Nothing is silently fixed.
+
+### What the numbers are, and are not
+
+- The sample file in `data/` is synthetic. It was generated by `tools/generate_sample.py` with a fixed seed. It describes no real organization.
+- Sustained use means active in at least 3 of the last 4 calendar weeks. If your export has no weekly column, the tool uses a fallback: active in the last 7 days and on at least 8 of the last 28 days. The fallback is a heuristic. It is not equivalent to the weekly definition, and the report says so.
+- The adoption signal is not a measure of developer performance, productivity, code quality, ROI, or business impact. Use it to spot rollout questions, not to rank people or declare success.
+- Flag thresholds and signal weights are starting points for investigation. They are not industry benchmarks and do not define a successful rollout. Change them when you have a better baseline.
+- A usage number is not an outcome. Use [docs/templates/outcome-review.md](docs/templates/outcome-review.md) and read [docs/04-measure.md](docs/04-measure.md) before you report value.
+
+## Develop
+
+```bash
+python -m pytest
+python tools/check_style.py
+```
+
+`check_style.py` fails on em dashes, en dashes, emojis, a short list of banned words, and company names that must not appear in this repo.
+
+## License
+
+[MIT](LICENSE).
