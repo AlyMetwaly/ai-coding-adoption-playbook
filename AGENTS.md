@@ -24,10 +24,10 @@ A docs repo plus a small Python tool. It is a practical kit for rolling out an A
 
 ## Content rules
 
-- Never add statistics, percentages or results as facts. Numbers may appear only as definitions, thresholds the reader sets, or examples labelled "example" or "synthetic".
+- Never add statistics, percentages or results as facts. Numbers may appear only as definitions, thresholds the reader sets, or examples labeled "example" or "synthetic".
 - Do not add employer data, real customer names, real person names, screenshots or internal tool names.
 - Any statement that depends on how Cursor behaves must carry the exact phrase "verify against current Cursor docs".
-- Sample data must stay labelled synthetic.
+- Sample data must stay labeled synthetic.
 
 ## Before you finish
 

@@ -27,7 +27,7 @@ A practical kit for rolling out an AI coding tool across an engineering organiza
 ## Acceptance criteria
 
 1. Each guide opens with one paragraph on its purpose, contains a checklist, and marks product-dependent statements with "verify against current Cursor docs".
-2. Nothing in the repo is employer data, a real customer, a real person, or an invented statistic. All sample data is labelled synthetic.
+2. Nothing in the repo is employer data, a real customer, a real person, or an invented statistic. All sample data is labeled synthetic.
 3. `docs/04-measure.md` defines four metrics (licensed, activated, weekly active, sustained). For each it says how the metric can be inflated and which companion metric exposes it.
 4. `python tools/adoption_scorecard data/sample_usage.csv` prints the report, and `pytest` passes with at least 12 tests.
 5. No em dashes, no en dashes, no emojis, and none of the banned words appear in any file. `python tools/check_style.py` checks this and passes.
