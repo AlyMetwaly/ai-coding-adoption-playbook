@@ -1,0 +1,31 @@
+---
+description: Review gate for agent-made changes. A human approves before anything is merged or pushed.
+globs:
+alwaysApply: true
+---
+
+<!-- Example rule. The frontmatter fields and file format may change: verify against current Cursor docs. -->
+
+# Agent review gate
+
+Changes made by an agent need a human review gate.
+
+## Before you hand work back
+
+- Give a short summary of the diff in plain words.
+- List every file you touched.
+- List every command you ran, and its result.
+- List anything you did not test, and why.
+
+## Limits
+
+- Never merge, push, tag or release without explicit approval from a person.
+- Never delete data, branches or files outside the task without asking.
+- Never add a new dependency without asking.
+- Never change security settings, secrets or access rules on your own.
+
+## When in doubt
+
+- Stop and ask. A short question is cheaper than a wrong change.
+- Prefer a small diff the reviewer can read in one sitting.
+- If the task grows, say so and propose a split.

@@ -1,0 +1,33 @@
+---
+description: Basic engineering hygiene for any change. Small diffs, tests, no secrets, stated trade-offs.
+globs:
+alwaysApply: true
+---
+
+<!-- Example rule. The frontmatter fields and file format may change: verify against current Cursor docs. -->
+
+# Engineering hygiene
+
+## Size of change
+
+- Make small, focused changes. One purpose per change.
+- If a task needs a large diff, propose a split first and wait for approval.
+- Do not reformat or rename unrelated code in the same change.
+
+## Tests
+
+- Add or update tests with every behavior change.
+- Run the project's test command before saying the work is done.
+- If a test fails, report it. Do not delete or weaken a test to make it pass.
+
+## Secrets and data
+
+- Never put secrets, tokens, keys or passwords in code, tests or comments.
+- Use environment variables or the project's secret store.
+- Do not paste customer data into examples. Use synthetic values.
+
+## Explain trade-offs
+
+- State the options you considered and why you chose one.
+- Name risks and anything you did not verify.
+- Say plainly when you are unsure.
