@@ -1,4 +1,6 @@
-"""Pure functions that turn per-user usage rows into an adoption summary.
+"""Pure functions that turn per-user usage rows into adoption measures.
+
+There is no composite score. Each signal is reported on its own.
 
 No network access and no file writes. Dates are ISO strings (YYYY-MM-DD).
 The definitions match docs/04-measure.md.
@@ -33,14 +35,8 @@ TREND_DELTA = 0.05
 # Flag thresholds. These are defaults. Set your own before you rely on them.
 FLAG_ACTIVATION_BELOW = 0.70
 FLAG_STICKING_BELOW = 0.40
-FLAG_TOP_TEAM_ABOVE = 0.50
+FLAG_TEAM_EXCESS = 0.20
 FLAG_DEPTH_BELOW = 0.25
-
-# Adoption signal weights. They sum to 1. Depth is reported separately and is
-# not part of the signal, because more agent use is not always better use.
-WEIGHT_SUSTAINED = 0.50
-WEIGHT_WEEKLY = 0.30
-WEIGHT_BALANCE = 0.20
 
 
 @dataclass(frozen=True)
@@ -88,12 +84,12 @@ class Depth:
 
 
 @dataclass(frozen=True)
-class Health:
-    score: int
-    sustained_part: float
-    weekly_part: float
-    balance_part: float
-    balance_applies: bool
+class Spread:
+    teams: int
+    teams_with_sustained: int
+    top_team: str | None
+    top_team_share: float
+    top_team_headcount_share: float
 
 
 def rate(part: int, whole: int) -> float:
@@ -286,25 +282,21 @@ def top_team_share(users: Sequence[User]) -> tuple[str, float] | None:
     return team, totals[team] / grand
 
 
-def compute_health(users: Sequence[User], funnel: Funnel) -> Health:
-    sustained_part = rate(funnel.sustained, funnel.licensed)
-    weekly_part = rate(funnel.weekly_active, funnel.licensed)
+def compute_spread(users: Sequence[User], as_of: date | None) -> Spread:
+    """How usage is spread across teams. No threshold is applied here."""
     teams = {u.team for u in users}
+    with_sustained = {
+        u.team for u in users if as_of is not None and is_sustained(u, as_of)
+    }
     top = top_team_share(users)
-    core_raw = WEIGHT_SUSTAINED * sustained_part + WEIGHT_WEEKLY * weekly_part
-    if len(teams) >= 2 and top is not None:
-        floor = 1 / len(teams)
-        balance_part = 1 - max(0.0, top[1] - floor) / (1 - floor)
-        balance_applies = True
-        raw = core_raw + WEIGHT_BALANCE * balance_part
-    else:
-        # One team, or no usage at all: balance says nothing, so leave it out and
-        # scale the other weights up to fill the whole score.
-        balance_part = 0.0
-        balance_applies = False
-        raw = core_raw / (1 - WEIGHT_BALANCE)
-    score = max(0, min(100, round(100 * raw)))
-    return Health(score, sustained_part, weekly_part, balance_part, balance_applies)
+    headcount = rate(sum(1 for u in users if top and u.team == top[0]), len(users))
+    return Spread(
+        teams=len(teams),
+        teams_with_sustained=len(with_sustained),
+        top_team=top[0] if top else None,
+        top_team_share=top[1] if top else 0.0,
+        top_team_headcount_share=headcount,
+    )
 
 
 def early_warning_flags(users: Sequence[User], funnel: Funnel, depth: Depth) -> list[str]:
@@ -321,11 +313,13 @@ def early_warning_flags(users: Sequence[User], funnel: Funnel, depth: Depth) -> 
             "check whether first use is turning into repeat use."
         )
     top = top_team_share(users)
-    if len({u.team for u in users}) >= 2 and top is not None and top[1] > FLAG_TOP_TEAM_ABOVE:
-        flags.append(
-            f"One team ({top[0]}) has {top[1]:.0%} of active days, above {FLAG_TOP_TEAM_ABOVE:.0%}: "
-            "check whether adoption is concentrated."
-        )
+    if len({u.team for u in users}) >= 2 and top is not None:
+        head = rate(sum(1 for u in users if u.team == top[0]), len(users))
+        if top[1] - head >= FLAG_TEAM_EXCESS:
+            flags.append(
+                f"One team ({top[0]}) has {top[1]:.0%} of active days but {head:.0%} of licensed "
+                "users: check whether adoption is concentrated."
+            )
     if depth.active_users and rate(depth.agent_users, depth.active_users) < FLAG_DEPTH_BELOW:
         flags.append(
             f"Agent use is below {FLAG_DEPTH_BELOW:.0%} of active users: "

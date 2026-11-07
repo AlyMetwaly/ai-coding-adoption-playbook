@@ -10,7 +10,7 @@ from adoption_scorecard.cli import main
 from adoption_scorecard.core import (
     compute_depth,
     compute_funnel,
-    compute_health,
+    compute_spread,
     compute_teams,
     early_warning_flags,
     is_sustained,
@@ -74,21 +74,22 @@ def test_all_inactive_users():
     funnel = compute_funnel(users, when)
     assert (funnel.licensed, funnel.activated, funnel.weekly_active, funnel.sustained) == (2, 0, 0, 0)
     depth = compute_depth(users)
-    health = compute_health(users, funnel)
-    assert health.score == 0  # nobody used it, and balance is left out for one team
-    assert health.balance_applies is False
+    spread = compute_spread(users, when)
+    assert spread.teams_with_sustained == 0
+    assert spread.top_team is None  # no active days at all
     flags = early_warning_flags(users, funnel, depth)
     assert flags and flags[0].startswith("Activation is below")
 
 
-def test_single_team_has_no_balance_penalty_or_flag():
+def test_single_team_has_no_spread_flag():
     users = users_from(row("u1", days="20"), row("u2", days="1"))
     funnel = compute_funnel(users, AS_OF)
     depth = compute_depth(users)
-    health = compute_health(users, funnel)
-    assert health.balance_applies is False
-    assert 0 < health.score <= 100
-    assert not any("One team carries" in f for f in early_warning_flags(users, funnel, depth))
+    spread = compute_spread(users, AS_OF)
+    assert spread.teams == 1
+    assert not any("One team (" in f for f in early_warning_flags(users, funnel, depth))
+    report = render_report(parse_rows([row("u1", days="20"), row("u2", days="1")]))
+    assert "One team in this export, so spread cannot be assessed." in report
 
 
 def test_malformed_values_are_skipped_and_listed():
@@ -206,18 +207,40 @@ def test_depth_splits_agent_completions_and_nothing():
     )
 
 
-def test_health_score_stays_between_0_and_100_and_rewards_better_use():
-    weak = users_from(row("a", last="2025-04-01", days="1"), row("b", last="", days="0"))
-    strong = users_from(
-        row("a", team="t1", days="20", agent="5", acc="50"),
-        row("b", team="t2", days="20", agent="5", acc="50"),
+def test_spread_counts_teams_with_sustained_users_and_top_share():
+    users = users_from(
+        row("a", team="big", days="24"),
+        row("b", team="big", days="24"),
+        row("c", team="small", days="1"),
+        row("d", team="idle", days="0", last=""),
     )
-    scores = []
-    for users in (weak, strong):
-        when = resolve_as_of(users)
-        funnel = compute_funnel(users, when)
-        scores.append(compute_health(users, funnel).score)
-    assert 0 <= scores[0] < scores[1] <= 100
+    spread = compute_spread(users, AS_OF)
+    assert spread.teams == 3
+    assert spread.teams_with_sustained == 1
+    assert spread.top_team == "big"
+    assert spread.top_team_share == pytest.approx(48 / 49)
+    assert spread.top_team_headcount_share == pytest.approx(2 / 4)
+
+
+def test_report_has_no_composite_score():
+    rows = [
+        HEADER,
+        "u1,t1,2025-01-10,2025-06-29,10,2,40",
+        "u2,t2,2025-01-10,2025-06-20,3,0,10",
+    ]
+    parsed = load_csv_text("\n".join(rows) + "\n")
+    report = render_report(parsed)
+    assert "out of 100" not in report
+    assert "composite" in report.lower()  # it says why there is no score
+    assert "signal = " not in report
+
+
+def test_status_panel_marks_unmeasured_signals():
+    parsed = load_csv_text(HEADER + "\nu1,t1,2025-01-10,2025-06-29,10,2,40\n")
+    report = render_report(parsed)
+    assert "## 4. Status panel" in report
+    assert "Outcome evidence | Not in this export" in report
+    assert "Expansion decision | Not calculated" in report
 
 
 def test_one_team_carrying_usage_raises_a_flag():
@@ -246,9 +269,8 @@ def test_report_has_all_sections_and_the_formula():
         HEADER + "\nu1,t1,2025-01-10,2025-06-29,10,2,40\nu2,t2,2025-01-10,2025-06-20,3,0,10\n"
     )
     report = render_report(parsed, source_label="test.csv")
-    for heading in ("## 1. Funnel", "## 2. By team", "## 3. Depth", "## 4. Adoption signal", "## 5. What each metric can hide"):
+    for heading in ("## 1. Funnel", "## 2. By team", "## 3. Depth", "## 4. Status panel", "## 5. What each metric can hide"):
         assert heading in report
-    assert "signal = 100 x (" in report
     assert "The fallback is a heuristic" in report
 
 

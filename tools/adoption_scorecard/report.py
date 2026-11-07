@@ -9,18 +9,15 @@ from .core import (
     FLAG_ACTIVATION_BELOW,
     FLAG_DEPTH_BELOW,
     FLAG_STICKING_BELOW,
-    FLAG_TOP_TEAM_ABOVE,
+    FLAG_TEAM_EXCESS,
     SUSTAINED_MIN_WEEKS,
     SUSTAINED_PROXY_MIN_ACTIVE_DAYS,
     WEEKLY_WINDOW_DAYS,
-    WEIGHT_BALANCE,
-    WEIGHT_SUSTAINED,
-    WEIGHT_WEEKLY,
     ParseResult,
     User,
     compute_depth,
     compute_funnel,
-    compute_health,
+    compute_spread,
     compute_teams,
     early_warning_flags,
     rate,
@@ -52,7 +49,7 @@ def render_report(
     funnel = compute_funnel(users, when)
     teams = compute_teams(users, when, previous_rates)
     depth = compute_depth(users)
-    health = compute_health(users, funnel)
+    spread = compute_spread(users, when)
     flags = early_warning_flags(users, funnel, depth)
 
     out: list[str] = []
@@ -144,16 +141,53 @@ def render_report(
         out.append("No active users in the last 28 days, so depth cannot be measured.")
     out.append("")
 
-    out.append("## 4. Adoption signal")
-    out.append("")
-    out.append("**n/a (no users)**" if not users else f"**{health.score} out of 100**")
+    out.append("## 4. Status panel")
     out.append("")
     out.append(
-        "The adoption signal is a 0 to 100 summary of observed usage patterns. It combines sustained "
-        "use, recent activity, and spread across teams. It is not a measure of developer performance, "
-        "engineering productivity, code quality, ROI, or business impact. Use it to spot rollout "
-        "questions, not to rank people or declare success. Depth is reported separately in section 3."
+        "Each signal is shown on its own. There is no composite score, because a single number "
+        "hides whether the problem is inactivity, weak repeat use, or uneven spread. Nothing here "
+        "measures developer performance, productivity, code quality, ROI, or business impact."
     )
+    out.append("")
+    if users:
+        activated_share = rate(funnel.activated, funnel.licensed)
+        weekly_share = rate(funnel.weekly_active, funnel.licensed)
+        sustained_share = rate(funnel.sustained, funnel.licensed)
+        sustained_of_activated = rate(funnel.sustained, funnel.activated)
+        agent_share = rate(depth.agent_users, depth.active_users)
+        if spread.teams >= 2:
+            spread_text = (
+                f"{spread.teams_with_sustained} of {spread.teams} teams have sustained users. "
+                f"Top team ({spread.top_team}) has {_pct(spread.top_team_share)} of active days "
+                f"and {_pct(spread.top_team_headcount_share)} of licensed users."
+            )
+        else:
+            spread_text = "One team in this export, so spread cannot be assessed."
+        rows = [
+            ["Activation", f"{_pct(activated_share)} of licensed users", "Activated divided by licensed"],
+            ["Weekly active", f"{_pct(weekly_share)} of licensed users", f"Last {WEEKLY_WINDOW_DAYS} days"],
+            [
+                "Sustained use",
+                f"{_pct(sustained_share)} of licensed, {_pct(sustained_of_activated)} of activated",
+                "See the note under section 1",
+            ],
+            ["Team spread", spread_text, "No threshold applied"],
+            [
+                "Agent use",
+                f"{_pct(agent_share)} of active users",
+                "Reported, not scored. More agent use is not always better use",
+            ],
+            ["Outcome evidence", "Not in this export", "Use the decision review template"],
+            ["Review capacity", "Not in this export", "Ask reviewers directly"],
+            [
+                "Expansion decision",
+                "Not calculated",
+                "Apply the triggers you set before the period (docs/05-expand.md)",
+            ],
+        ]
+        out += _table(["Signal", "This export", "Note"], rows)
+    else:
+        out.append("No users, so there is nothing to show.")
     out.append("")
     if flags:
         out.append("Flags to investigate:")
@@ -194,35 +228,13 @@ def render_report(
 
     out.append("---")
     out.append("")
-    out.append("How the adoption signal is calculated:")
-    out.append("")
-    out.append("```text")
     out.append(
-        "signal = 100 x ("
-        f"{WEIGHT_SUSTAINED:.2f} x sustained share of licensed"
-        f" + {WEIGHT_WEEKLY:.2f} x weekly active share of licensed"
-        f" + {WEIGHT_BALANCE:.2f} x team balance)"
-    )
-    out.append("team balance = 1 minus how far the top team's share of active days sits above an equal split.")
-    out.append("With one team, or no usage, balance is left out and the other weights are scaled to 100.")
-    out.append("```")
-    out.append("")
-    out.append(
-        f"Parts for this file: sustained {_pct(health.sustained_part)}, "
-        f"weekly {_pct(health.weekly_part)}, "
-        + (
-            f"balance {_pct(health.balance_part)}."
-            if health.balance_applies
-            else "balance not applicable (one team or no usage)."
-        )
-    )
-    out.append("")
-    out.append(
-        "Flag thresholds are starting points for investigation. They are not industry benchmarks "
-        "and do not define a successful rollout. Change them when you have a better baseline: "
+        "Flag thresholds are example defaults. They are not benchmarks or recommended targets, and "
+        "they do not define a successful rollout. Set them from the decision they control, your "
+        "support capacity, the risk of expanding, and your own baseline: "
         f"activation below {_pct(FLAG_ACTIVATION_BELOW)}, "
         f"sticking below {_pct(FLAG_STICKING_BELOW)}, "
-        f"top team above {_pct(FLAG_TOP_TEAM_ABOVE)}, "
+        f"a team's share of active days {_pct(FLAG_TEAM_EXCESS)} or more above its share of users, "
         f"agent use below {_pct(FLAG_DEPTH_BELOW)}."
     )
     out.append("")
