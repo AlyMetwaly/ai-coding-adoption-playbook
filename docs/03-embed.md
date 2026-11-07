@@ -1,11 +1,12 @@
 # 03 Embed
 
-This guide helps you turn scattered individual tricks into shared team habits. It covers repeatable workflows, shared rules files, an AGENTS.md pattern, reusable skills and commands, and review gates for changes made by agents. Use it once a few people use the tool daily.
+This guide helps you turn scattered individual tricks into shared team habits. It covers repeatable workflows, what work is in scope, shared rules files, an AGENTS.md pattern, reusable skills and commands, and review gates for changes made by agents. Use it once a few people use the tool daily.
 
 ## Checklist
 
 - [ ] Three to five use cases are picked from real team work.
 - [ ] Each use case has a written workflow, an owner and a review rule.
+- [ ] The in-scope, extra-review and excluded work lists are agreed with the security owner.
 - [ ] A shared rules file and an AGENTS.md exist in each in-scope repo.
 - [ ] Shared assets live in version control, with a named owner.
 - [ ] A review gate for agent-made changes is written and used.
@@ -26,6 +27,38 @@ Steps:
 6. Retire it when it stops helping.
 
 A workflow is ready when someone new can follow it without asking the author.
+
+## What work is in scope
+
+Not every task suits the tool in the first months. Sort work into three lists and publish them. Teams should adjust these lists with their security owner. Record the result in the decision log from `01-align.md`.
+
+**Allowed**
+
+- Tests.
+- Documentation.
+- Local developer tooling.
+- Small refactors with unchanged behavior.
+- Boilerplate in established patterns.
+
+**Allowed with additional review**
+
+- New dependencies.
+- Database migrations.
+- API contract changes.
+- Performance-sensitive code.
+- CI/CD changes.
+
+**Excluded initially**
+
+- Authentication and authorization.
+- Cryptography.
+- Secrets management.
+- Payment logic.
+- Safety-critical systems.
+- Production incident changes.
+- Code involving restricted data.
+
+Revisit the excluded list when you have evidence from the allowed work, not before.
 
 ## Shared rules files
 
@@ -84,18 +117,19 @@ Trade-off: more assets mean more to maintain. Ten good ones beat fifty stale one
 
 Agents can produce a lot of code fast. Review becomes the bottleneck and the safety net.
 
-- [ ] Small diffs. Split large tasks so a reviewer can read the whole change.
-- [ ] Tests first, or tests with the change. Ask the agent to show tests failing, then passing.
-- [ ] The author can explain every line. "The agent wrote it" is not an answer.
+- [ ] Prefer changes small enough to review as one coherent unit. Do not split a risky change into several pull requests only to satisfy a size limit.
+- [ ] Define the expected behavior before accepting the change. Add or update automated tests where practical. If automated coverage is not practical, record the manual verification performed and the remaining risk.
+- [ ] The author must understand the behavior, assumptions, security implications and failure modes of the change. The author remains accountable for the full pull request, including generated code.
 - [ ] The agent lists files touched and commands run.
 - [ ] Human approval before merge. The agent never merges or pushes alone.
-- [ ] Extra care for security-sensitive code, migrations and dependencies.
-- [ ] Reviewers may ask for a smaller diff and the author must comply.
+- [ ] Extra care for work on the "allowed with additional review" list above, and for anything on the excluded list that is later approved.
+- [ ] Reviewers may ask for a change to be restructured when they cannot review it as one unit, and the author must respond.
 
 Trade-offs to state openly:
 
-- Small diffs mean more pull requests. Plan for review capacity.
-- Tests first slow the first draft and speed up the review.
+- Changes that stay reviewable can mean more pull requests. Plan for review capacity.
+- Defining expected behavior first adds time to the first draft. It gives reviewers something to check against.
+- Manual verification is weaker evidence than automated tests. Record the remaining risk when you rely on it.
 - Strict gates may annoy people at first. Relax them only with evidence, such as stable quality over time.
 
 ## Use case table (hypothetical rows)
@@ -106,7 +140,7 @@ These rows are examples. Replace them with your own.
 |---|---|---|---|
 | Add tests for existing code | Command: generate tests for a file | Test champion | Tests must fail when behavior breaks |
 | Explain unfamiliar module | Prompt in champion kit | Docs champion | Author checks claims against code |
-| Small refactor | Rule: small focused changes | Tech lead | Diff stays small, tests unchanged or added |
+| Small refactor | Rule: small focused changes | Tech lead | Reviewable as one unit, behavior unchanged, tests pass |
 | Draft release notes | Command: summarize merged changes | Release owner | Human edits before publishing |
 | Dependency upgrade | Skill: upgrade checklist | Platform lead | Two reviewers, full test run |
 

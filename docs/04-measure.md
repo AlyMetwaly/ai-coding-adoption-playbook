@@ -83,7 +83,7 @@ Completions only is not bad. It is a stage. Agent sessions are not always better
 6. Add quality guardrails next to speed measures.
 7. Use the words "associated with", not "caused by", unless you ran a controlled comparison.
 
-Templates: `templates/exec-roi-one-pager.md` and `templates/outcome-review.md`.
+Template: `templates/decision-review.md`. Worked example: `06-worked-example.md`.
 
 ## Do not report
 
